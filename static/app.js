@@ -32,7 +32,7 @@ function fillSelects() {
   $$("#basAy, #bitAy").forEach(s => s.innerHTML = S.meta.aylar.map((a, i) => `<option value="${i+1}">${a}</option>`).join(""));
   const yy = []; for (let y = NOW_Y + 1; y >= 1990; y--) yy.push(y);
   $$("#basYil, #bitYil").forEach(s => s.innerHTML = `<option value="">—</option>` + yy.map(y => `<option>${y}</option>`).join(""));
-  $("#sMinYil").innerHTML = yy.map(y => `<option>${y}</option>`).join("");
+  $("#sMinYil").innerHTML = `<option value="0">Tüm yıllar</option>` + yy.map(y => `<option>${y}</option>`).join("");
 }
 const range = () => [$("#basYil").value, +$("#basAy").value, $("#bitYil").value, +$("#bitAy").value];
 function setRange(by, ba, ey, ea) { $("#basYil").value = by; $("#basAy").value = ba; $("#bitYil").value = ey; $("#bitAy").value = ea; syncPreset(); }
@@ -366,7 +366,7 @@ async function pollSync() {
   wasRunning = j.calisiyor;
 }
 function openSync() {
-  $("#sMinYil").value = $("#basYil").value || NOW_Y - 4;
+  $("#sMinYil").value = "0";
   $("#sTurler").innerHTML = Object.entries(KIND).map(([k, l]) => `<label><input type="checkbox" value="${k}" checked> ${l}</label>`).join("");
   $("#sHocalar").innerHTML = S.hocalar.filter(h => h.aktif).map(h => `<label><input type="checkbox" value="${h.yok_id}" checked> ${esc(h.ad)} ${esc(h.soyad)}</label>`).join("");
   showProg = false; $("#dlgSync").showModal(); pollSync();

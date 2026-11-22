@@ -12,7 +12,7 @@ _lock = threading.Lock()
 
 
 def varsayilan_min_yil():
-    return datetime.now().year - 4  # son 5 yıl
+    return 0  # tüm yıllar çekilir; "son 5 yıl" yalnızca ekrandaki varsayılan filtredir
 
 
 def calistir(hoca_ids=None, kinds=None, min_year=None, detay=True, kaynak="elle", log=print):
@@ -25,7 +25,7 @@ def calistir(hoca_ids=None, kinds=None, min_year=None, detay=True, kaynak="elle"
         hocalar = {h["yok_id"]: h for h in db.hocalar()}
         hoca_ids = hoca_ids or [h["yok_id"] for h in db.hocalar(sadece_aktif=True)]
         kinds = kinds or list(TURLER)
-        min_year = int(min_year or varsayilan_min_yil())
+        min_year = int(min_year or varsayilan_min_yil()) or None
         tam = set(kinds) == set(TURLER) and set(hoca_ids) >= {h["yok_id"] for h in db.hocalar(sadece_aktif=True)}
         JOB.update(toplam=len(hoca_ids), ilerleme=0, hatalar=[], bitis=None)
         for i, hid in enumerate(hoca_ids):
