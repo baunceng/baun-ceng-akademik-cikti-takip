@@ -1,9 +1,0 @@
-name: yok-erisim-testi
-on: workflow_dispatch
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - run: |
-          curl -s -o /dev/null -w "ana_tur HTTP %{http_code}\n" "https://akademik.yok.gov.tr/api/yayin/ana/tur/list"
-          curl -s -w "\ndetay HTTP %{http_code}\n" "https://akademik.yok.gov.tr/api/akademisyen/detay?authorGuidId=45E814E7BF469FA5" | tail -c 400
