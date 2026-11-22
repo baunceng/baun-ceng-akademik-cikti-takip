@@ -30,7 +30,6 @@ def uret():
                 for r in db.kayitlar() if not r["gizli"] and r["hoca_id"] in aktif]
     veri = {
         "olusturma": db.ayar_oku("son_tam_senkron") or db.now(),
-        "yayin": db.now(),
         "meta": meta(),
         "hocalar": [{k: h[k] for k in ("yok_id", "ad", "soyad", "aktif")} for h in hocalar],
         "excel": [{"ad": ad, "kind": kind, "cols": [[b, a, w] for b, a, w in cols]}
