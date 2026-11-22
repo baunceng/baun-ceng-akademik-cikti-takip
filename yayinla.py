@@ -4,7 +4,8 @@
   python yayinla.py --yerel  -> yalnızca docs/ klasörünü üretir (göndermez)
 
 Sayfa: https://gulheda.github.io/baun-ceng-akademik-cikti-takip/
-Gizlenen kayıtlar ve pasif öğretim üyeleri yayınlanmaz.
+Gizlenen kayıtlar ve pasif öğretim üyeleri sayfada gösterilmez.
+Ayrıca veritabanının tamamı (düzeltmeler dahil) yedek/veri.sql olarak GitHub'a yedeklenir.
 """
 import json
 import os
@@ -23,6 +24,7 @@ GIZLE = ("kaynak", "source_id")  # sayfada gerekmeyen alanlar
 
 
 def uret():
+    db.yedek_al()
     os.makedirs(DOCS, exist_ok=True)
     hocalar = db.hocalar(sadece_aktif=True)
     aktif = {h["yok_id"] for h in hocalar}
@@ -58,12 +60,13 @@ def uret():
 def gonder():
     def git(*a):
         return subprocess.run(["git", *a], cwd=KLASOR, capture_output=True, text=True)
-    git("add", "docs")
-    if git("diff", "--cached", "--quiet", "--", "docs").returncode == 0:
+    git("add", "docs", "yedek")
+    if git("diff", "--cached", "--quiet", "--", "docs", "yedek").returncode == 0:
         return "Sayfa zaten güncel."
-    r = git("commit", "-m", f"Veri güncellemesi {db.now()[:10]}", "--", "docs")
+    r = git("commit", "-m", f"Veri güncellemesi {db.now()[:10]}", "--", "docs", "yedek")
     if r.returncode:
         raise RuntimeError(r.stderr or r.stdout)
+    git("pull", "--rebase", "-q")  # GitHub'da web üzerinden yapılmış bir değişiklik varsa önce al
     r = git("push", "-q")
     if r.returncode:
         raise RuntimeError("GitHub'a gönderilemedi: " + (r.stderr or r.stdout).strip())

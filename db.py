@@ -35,7 +35,22 @@ def conn():
     return c
 
 
+YEDEK = os.path.join(os.path.dirname(os.path.abspath(__file__)), "yedek", "veri.sql")
+
+
+def yedek_al():
+    """Veritabanını metin olarak yedekler (GitHub'a gönderilir; devirde/kayıpta geri yüklenir)."""
+    os.makedirs(os.path.dirname(YEDEK), exist_ok=True)
+    with _lock, conn() as c, open(YEDEK, "w", encoding="utf-8") as f:
+        for satir in c.iterdump():
+            f.write(satir + "\n")
+
+
 def init():
+    # Yeni bir bilgisayarda veri.db yoksa GitHub'daki yedekten kur (düzeltmeler dahil)
+    if not os.path.exists(DB_PATH) and os.path.exists(YEDEK):
+        with open(YEDEK, encoding="utf-8") as f, sqlite3.connect(DB_PATH) as c:
+            c.executescript(f.read())
     with _lock, conn() as c:
         c.executescript("""
         CREATE TABLE IF NOT EXISTS hocalar(
