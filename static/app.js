@@ -14,8 +14,116 @@ const PRESET = {"5y":[NOW_Y-4,1,NOW_Y,12], buyil:[NOW_Y,1,NOW_Y,12], gecenyil:[N
 
 const S = {meta:null, hocalar:[], rows:[], kind:"", hoca:new Set(), eksik:false, sel:null, edit:null};
 
+/* ---------------------------------------------------------------- salt okunur site (GitHub Pages) */
+const RO = !!window.SITE_DATA_URL;   // docs/index.html bu değişkeni tanımlar
+let DATA = null;
+const normTxt = s => String(s ?? "").normalize("NFKD").replace(/[^\x00-\x7f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+const toInt = v => { const n = parseInt(v, 10); return Number.isNaN(n) ? null : n; };
+const cmp2 = (a, b) => a[0] - b[0] || a[1] - b[1];
+function filtrele(list, p) {          // schema.filtrele ile aynı kurallar
+  const bas = [toInt(p.get("bas_yil")), toInt(p.get("bas_ay")) || 1], bit = [toInt(p.get("bit_yil")), toInt(p.get("bit_ay")) || 12];
+  const aysiz = (p.get("aysizlar") ?? "1") === "1";
+  const set = (k, sep) => new Set((p.get(k) || "").split(sep).filter(Boolean));
+  const hc = set("hocalar", ","), tu = set("turler", ","), alt = set("alt_tur", "|");
+  const kapsam = p.get("kapsam") || "", ara = normTxt(p.get("ara"));
+  const adi = id => { const h = DATA.hocalar.find(x => x.yok_id === id); return h ? `${h.ad} ${h.soyad}` : ""; };
+  const out = list.filter(r => {
+    if (hc.size && !hc.has(r.hoca_id)) return false;
+    if (tu.size && !tu.has(r.kind)) return false;
+    if (alt.size && !alt.has(r.tur || "") && !alt.has(r.kategori || "")) return false;
+    if (kapsam && r.kapsam !== kapsam && r.tur !== kapsam) return false;
+    const y = toInt(r.yil), a = toInt(r.ay);
+    if (bas[0] || bit[0]) {
+      if (y == null) return false;
+      if (a) { if (bas[0] && cmp2([y, a], bas) < 0) return false; if (bit[0] && cmp2([y, a], bit) > 0) return false; }
+      else { if (!aysiz) return false; if (bas[0] && y < bas[0]) return false; if (bit[0] && y > bit[0]) return false; }
+    }
+    if (ara) {
+      const hay = normTxt(["baslik","dergi","etkinlik","kitap_adi","yazarlar","tur","kategori","proje_no","basvuru_no","doi"].map(k => r[k] ?? "").join(" ") + " " + adi(r.hoca_id));
+      if (!hay.includes(ara)) return false;
+    }
+    return true;
+  });
+  const key = r => [toInt(r.yil) || 0, toInt(r.ay) || 0, toInt(r.gun) || 0];
+  return out.sort((a, b) => { const x = key(a), y = key(b); return y[0] - x[0] || y[1] - x[1] || y[2] - x[2]; });
+}
+async function staticApi(url, opt) {
+  if (opt.method && opt.method !== "GET") throw new Error("Bu sayfa salt okunurdur");
+  if (!DATA) DATA = await (await fetch(window.SITE_DATA_URL, {cache: "no-cache"})).json();
+  const [path, qs] = url.split("?");
+  if (path === "/api/meta") return DATA.meta;
+  if (path === "/api/hocalar") return DATA.hocalar;
+  if (path === "/api/senkron") return {calisiyor: false, son_tam_senkron: DATA.olusturma, oto_aktif: false};
+  if (path === "/api/kayitlar") return filtrele(DATA.kayitlar, new URLSearchParams(qs));
+  throw new Error("Bu sayfada desteklenmiyor");
+}
+function birlestirJs(rows) {          // schema.birlestir ile aynı
+  const g = new Map();
+  for (const r of rows) {
+    const t = normTxt(r.baslik).slice(0, 120), k = t ? `${r.kind}|${t}|${toInt(r.yil)}` : `id${r.id}`;
+    const ad = hocaAdi(r.hoca_id);
+    if (!g.has(k)) g.set(k, {...r, hocalar: [ad]}); else if (!g.get(k).hocalar.includes(ad)) g.get(k).hocalar.push(ad);
+  }
+  return [...g.values()];
+}
+async function excelStatic(extra) {   // excel_export.uret'in tarayıcıdaki karşılığı
+  const p = new URLSearchParams(serverParams(extra));
+  let rows = filtrele(DATA.kayitlar, p);
+  rows = p.get("birlestir") === "1" ? birlestirJs(rows) : rows.map(r => ({...r, hocalar: [hocaAdi(r.hoca_id)]}));
+  const wb = new ExcelJS.Workbook();
+  const head = {type: "pattern", pattern: "solid", fgColor: {argb: "FFDDEBF7"}};
+  const thin = {style: "thin"}, border = {top: thin, left: thin, bottom: thin, right: thin};
+  const aciklama = `Dönem: ${rangeText()} · Oluşturma: ${new Date().toLocaleString("tr-TR")} · Veri: ${fmt(DATA.olusturma)} · Kaynak: YÖK Akademik (akademik.yok.gov.tr)`;
+  const title = (ws, t) => { ws.getCell("A1").value = `BALIKESİR ÜNİVERSİTESİ – BİLGİSAYAR MÜHENDİSLİĞİ · ${t}`; ws.getCell("A1").font = {bold: true, size: 13};
+    ws.getCell("A2").value = aciklama; ws.getCell("A2").font = {italic: true, color: {argb: "FF555555"}}; };
+  const val = (r, a) => a === "_hoca" ? r.hocalar.join(", ") : a === "ay" ? (S.meta.aylar[r.ay - 1] || "") : (r[a] ?? "");
+  const say = {};
+  const ozet = wb.addWorksheet("Özet");
+  for (const sh of DATA.excel) {
+    const ws = wb.addWorksheet(sh.ad); title(ws, sh.ad);
+    const hr = ws.getRow(4);
+    [["ID", "", 5], ...sh.cols].forEach(([h, , w], i) => { const c = hr.getCell(i + 1); c.value = h; c.fill = head; c.font = {bold: true}; c.border = border; ws.getColumn(i + 1).width = w; });
+    let n = 0;
+    for (const r of rows.filter(x => x.kind === sh.kind)) {
+      n++; const row = ws.getRow(4 + n); row.getCell(1).value = n; row.getCell(1).border = border;
+      sh.cols.forEach(([, a], i) => {
+        const c = row.getCell(i + 2), v = val(r, a);
+        c.value = (a === "link" && /^http/.test(v)) ? {text: v, hyperlink: v} : v;
+        if (a === "link" && /^http/.test(v)) c.font = {color: {argb: "FF0563C1"}, underline: true};
+        c.alignment = {wrapText: true, vertical: "top"}; c.border = border;
+      });
+      const y = toInt(r.yil); if (y) { say[y] ??= {}; say[y][sh.kind] = (say[y][sh.kind] || 0) + 1; }
+    }
+    ws.views = [{state: "frozen", xSplit: 2, ySplit: 4}];
+    if (n) ws.autoFilter = {from: {row: 4, column: 1}, to: {row: 4 + n, column: sh.cols.length + 1}};
+  }
+  title(ozet, "Akademik Çıktı Özeti");
+  const ks = ["makale", "bildiri", "kitap", "proje", "patent"];
+  ["Yıl", "Makale", "Bildiri", "Kitap", "Proje", "Patent", "GENEL TOPLAM"].forEach((h, i) => { const c = ozet.getRow(4).getCell(i + 1); c.value = h; c.fill = head; c.font = {bold: true}; c.border = border; ozet.getColumn(i + 1).width = 14; });
+  const yillar = Object.keys(say).map(Number).sort((a, b) => b - a);
+  yillar.forEach((y, j) => { const v = ks.map(k => say[y][k] || 0); [y, ...v, v.reduce((a, b) => a + b, 0)].forEach((x, i) => { const c = ozet.getRow(5 + j).getCell(i + 1); c.value = x; c.border = border; }); });
+  if (yillar.length) {
+    const last = 4 + yillar.length, tr = ozet.getRow(last + 1);
+    tr.getCell(1).value = "TOPLAM"; tr.getCell(1).font = {bold: true};
+    for (let i = 2; i <= 7; i++) { const L = String.fromCharCode(64 + i), c = tr.getCell(i); c.value = {formula: `SUM(${L}5:${L}${last})`}; c.font = {bold: true}; c.border = border; }
+  }
+  const hs = wb.addWorksheet("Öğretim Üyeleri");
+  [["Ad", 22], ["Soyad", 18], ["YÖK Akademik ID", 20], ["Profil", 70]].forEach(([h, w], i) => { const c = hs.getRow(1).getCell(i + 1); c.value = h; c.fill = head; c.font = {bold: true}; c.border = border; hs.getColumn(i + 1).width = w; });
+  const sec = new Set((p.get("hocalar") || "").split(",").filter(Boolean));
+  DATA.hocalar.filter(h => !sec.size || sec.has(h.yok_id)).forEach((h, j) => {
+    const url = `https://akademik.yok.gov.tr/academician-details?authorGuidId=${h.yok_id}`;
+    [h.ad, h.soyad, h.yok_id, {text: url, hyperlink: url}].forEach((v, i) => { const c = hs.getRow(2 + j).getCell(i + 1); c.value = v; c.border = border; });
+  });
+  const buf = await wb.xlsx.writeBuffer();
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([buf], {type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}));
+  const d = new Date(); a.download = `BAUN_CENG_Akademik_Cikti_${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}.xlsx`;
+  a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+
 /* ---------------------------------------------------------------- yardımcılar */
 async function api(url, opt = {}) {
+  if (RO) return staticApi(url, opt);
   const o = {...opt};
   if (o.body && typeof o.body !== "string") { o.body = JSON.stringify(o.body); o.headers = {"Content-Type":"application/json"}; }
   const r = await fetch(url, o);
@@ -185,7 +293,7 @@ function idxHtml(r) {
   return parts.filter(Boolean).map(v => `<span class="bdg ${badgeClass(v)}">${esc(v)}</span>`).join("");
 }
 function rowHtml(r) {
-  const mon = `<label class="mon-w ${r.ay ? "" : "is-blank"}" title="Ayı değiştir">${r.ay ? AYK[r.ay - 1] : "ay ekle"}` +
+  const mon = RO ? `<span class="mon-w ${r.ay ? "" : "is-blank"}">${r.ay ? AYK[r.ay - 1] : ""}</span>` : `<label class="mon-w ${r.ay ? "" : "is-blank"}" title="Ayı değiştir">${r.ay ? AYK[r.ay - 1] : "ay ekle"}` +
     `<select class="mon" data-id="${r.id}" aria-label="Ay"><option value="">—</option>` +
     AYK.map((a, i) => `<option value="${i+1}" ${r.ay == i+1 ? "selected" : ""}>${S.meta.aylar[i]}</option>`).join("") + `</select></label>`;
   const f = [];
@@ -233,9 +341,10 @@ function openInsp(r, yeni = false) {
   h += `<div class="insp-sec">Ayrıntılar</div>` + rest.map(f => fieldHtml(f, r)).join("");
   if (r.link) h += `<div class="fld"><a class="txt" href="${esc(r.link)}" target="_blank" rel="noopener">Yayını aç ↗</a></div>`;
   $("#inspBody").innerHTML = h;
+  if (RO) $$("#inspBody input, #inspBody textarea, #inspBody select").forEach(el => { el.readOnly = true; el.disabled = el.tagName === "SELECT"; });
   $("#inspKind").textContent = yeni ? "Yeni kayıt" : `${KIND[r.kind]} · ${r.yil ?? ""}`;
   $("#inspSrc").textContent = yeni ? "YÖKSİS'te olmayan bir çıktıyı elle ekleyin" :
-    `${hocaAdi(r.hoca_id)} — ${r.manuel ? "elle eklendi" : "YÖKSİS kaydı; düzeltmeleriniz güncellemede korunur"}`;
+    RO ? hocaAdi(r.hoca_id) : `${hocaAdi(r.hoca_id)} — ${r.manuel ? "elle eklendi" : "YÖKSİS kaydı; düzeltmeleriniz güncellemede korunur"}`;
   $("#inspReset").hidden = yeni || r.manuel || !(r.duzenlendi || []).length;
   $("#inspHide").hidden = yeni;
   $("#inspHide").textContent = r.manuel ? "Sil" : r.gizli ? "Tekrar göster" : "Gizle";
@@ -346,14 +455,15 @@ async function pollSync() {
   const st = $("#syncStatus"), son = j.bitis || j.son_tam_senkron;
   st.classList.toggle("run", j.calisiyor);
   st.textContent = j.calisiyor ? `${j.kaynak === "otomatik" ? "Otomatik güncelleme" : "Güncelleniyor"}: ${j.ilerleme}/${j.toplam}` : `Son güncelleme ${fmt(son)}`;
-  $("#syncSub").textContent = j.calisiyor ? j.mesaj : (j.oto_aktif ? `Sonraki otomatik: ${j.sonraki}` : "Otomatik güncelleme kapalı");
+  $("#syncSub").textContent = j.calisiyor ? j.mesaj : RO ? "Salt okunur görünüm · her ay güncellenir" : (j.oto_aktif ? `Sonraki otomatik: ${j.sonraki}` : "Otomatik güncelleme kapalı");
+  if (RO) { $("#syncStatus").textContent = `Veri tarihi ${fmt(son)}`; return; }
   $("#syncMeter").hidden = !j.calisiyor;
   const pct = (j.toplam ? 100 * j.ilerleme / j.toplam : 0) + "%";
   $$(".meter i").forEach(i => i.style.width = pct);
   $("#btnSync").disabled = j.calisiyor;
   $("#otoAktif").checked = j.oto_aktif;
   $("#otoBilgi").textContent = j.oto_aktif
-    ? `Ayın ilk gününden sonra ilk fırsatta, tüm aktif öğretim üyeleri için son 5 yıl çekilir. Sonraki: ${j.sonraki}.`
+    ? `Ayın ilk gününden sonra ilk fırsatta, tüm aktif öğretim üyeleri için tüm yıllar çekilir ve web sayfası güncellenir. Sonraki: ${j.sonraki}.`
     : "Kapalı. Veriler yalnızca bu pencereden elle güncellenir.";
   $("#sProg").hidden = !(j.calisiyor || showProg);
   $("#sProg .msg").textContent = j.mesaj;
@@ -473,6 +583,11 @@ function bind() {
     await api("/api/otomatik", {method: "POST", body: {aktif: e.target.checked}});
     toast(e.target.checked ? "Her ay otomatik güncellenecek" : "Otomatik güncelleme kapatıldı"); pollSync();
   };
+  $("#sYayinla").onclick = async () => {
+    const b = $("#sYayinla"); b.disabled = true; b.textContent = "Gönderiliyor…";
+    try { toast((await api("/api/yayinla", {method: "POST"})).mesaj); } catch (e) { toast(e.message); }
+    finally { b.disabled = false; b.textContent = "Web sayfasını şimdi güncelle"; }
+  };
   $("#sBasla").onclick = async () => {
     const turler = $$("#sTurler input:checked").map(i => i.value), hocalar = $$("#sHocalar input:checked").map(i => i.value);
     if (!turler.length || !hocalar.length) return toast("En az bir tür ve bir öğretim üyesi seçin");
@@ -501,8 +616,10 @@ function bind() {
     const extra = {birlestir: $("#xBirlestir").checked ? 1 : 0, hocalar: [...S.hoca].join(",")};
     if (!$("#xTumTurler").checked && S.kind) extra.turler = S.kind;
     if ($("#altTur").value) extra.alt_tur = $("#altTur").value;
+    $("#dlgExcel").close();
+    if (RO) { excelStatic(extra).then(() => toast("Excel dosyası indirildi")).catch(e => toast("Excel oluşturulamadı: " + e.message)); return; }
     location.href = "/api/excel?" + serverParams(extra);
-    $("#dlgExcel").close(); toast("Excel dosyası indiriliyor");
+    toast("Excel dosyası indiriliyor");
   };
 
   // klavye
@@ -519,6 +636,7 @@ function bind() {
 }
 
 (async function init() {
+  if (RO) document.body.classList.add("ro");
   S.meta = await api("/api/meta");
   fillSelects(); restore(); await loadHocalar(); bind(); await load(); pollSync();
   const m = location.hash.match(/kayit=(\d+)/);

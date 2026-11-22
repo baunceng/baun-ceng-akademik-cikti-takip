@@ -75,7 +75,7 @@
       <button class="toggle" id="btnEksik" aria-pressed="false"></button>
       <span class="grow"></span>
       <label class="check"><input type="checkbox" id="aysizlar" checked> Ayı bilinmeyenleri dahil et</label>
-      <label class="check"><input type="checkbox" id="gizliler"> Gizlenenleri göster</label>
+      <label class="check rw"><input type="checkbox" id="gizliler"> Gizlenenleri göster</label>
       <button class="txt" id="btnTemizle" hidden>Filtreleri sıfırla</button>
       <button class="btn ghost sm" id="btnYeni">+ Yeni kayıt</button>
     </div>
@@ -152,7 +152,9 @@
           <span>Yayın ayrıntılarını da al<small>Tüm yazarlar, Q değeri ve bağlantı gelir; işlem birkaç dakika sürer.</small></span></label>
       </div>
       <div id="sProg" class="prog" hidden><div class="meter"><i></i></div><p class="msg"></p><ul class="errs"></ul></div>
-      <p class="note small">Elle yaptığınız düzeltmeler ve gizlediğiniz kayıtlar güncellemede korunur.</p>
+      <p class="note small">Elle yaptığınız düzeltmeler ve gizlediğiniz kayıtlar güncellemede korunur. Her güncellemeden sonra
+        <a href="https://gulheda.github.io/baun-ceng-akademik-cikti-takip/" target="_blank" rel="noopener">web sayfası</a> da güncellenir (gizlenen kayıtlar yayınlanmaz).
+        Elle yaptığınız düzeltmeleri hemen yansıtmak için: <button type="button" class="txt" id="sYayinla">Web sayfasını şimdi güncelle</button></p>
     </div>
     <div class="dlg-foot"><button class="btn ghost" value="x">Kapat</button><button type="button" class="btn" id="sBasla">Güncellemeyi başlat</button></div>
   </form>

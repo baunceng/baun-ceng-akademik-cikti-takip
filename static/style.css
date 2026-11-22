@@ -259,3 +259,9 @@ h3{font-size:14px;font-weight:650;margin:22px 0 10px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 @media print{.top,.side,.toolbar,.subbar,.insp,.kpis{display:none}.app{display:block}.tablewrap{overflow:visible}}
+
+/* ---------- salt okunur web sayfası (GitHub Pages) ---------- */
+body.ro #btnHocalar, body.ro #btnHocalar2, body.ro #btnSync, body.ro #btnYeni,
+body.ro .rw, body.ro .insp-foot { display: none !important; }
+body.ro .mon-w { cursor: default; }
+body.ro .insp-body input, body.ro .insp-body textarea, body.ro .insp-body select { background: transparent; }

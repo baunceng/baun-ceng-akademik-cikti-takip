@@ -174,6 +174,15 @@ def api_excel():
                      mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 
+@app.post("/api/yayinla")
+def api_yayinla():
+    import yayinla
+    try:
+        return jsonify(mesaj=yayinla.yayinla())
+    except Exception as e:
+        return jsonify(hata=str(e)), 500
+
+
 @app.get("/")
 def index():
     return send_from_directory("static", "index.html")

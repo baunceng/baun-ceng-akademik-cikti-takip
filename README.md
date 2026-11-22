@@ -37,3 +37,11 @@ YÖKSİS, ay bilgisini yalnızca **bildirilerde** (etkinlik tarihi) ve **projele
 
 ## Dosyalar
 `app.py` (sunucu) · `yok_client.py` (YÖK API istemcisi) · `db.py` (SQLite, `veri.db`) · `schema.py` (alanlar/filtre) · `excel_export.py` · `static/` (arayüz)
+
+## Web sayfası (salt okunur)
+
+https://gulheda.github.io/baun-ceng-akademik-cikti-takip/
+
+Veriler YÖK Akademik'ten yerel platformla çekilir (YÖK, GitHub sunucularından gelen istekleri kabul etmediği için). Her güncellemeden sonra `yayinla.py` verileri `docs/` klasörüne yazar ve GitHub'a gönderir; GitHub Pages bu klasörü yayınlar. Sayfada filtreleme, arama ve Excel indirme vardır, düzenleme yoktur. Gizlenen kayıtlar yayınlanmaz.
+
+- Elle düzeltmeleri hemen yansıtmak için: "YÖKSİS'ten güncelle" penceresindeki "Web sayfasını şimdi güncelle" ya da `python yayinla.py`

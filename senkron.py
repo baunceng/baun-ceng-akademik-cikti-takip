@@ -62,6 +62,13 @@ def calistir(hoca_ids=None, kinds=None, min_year=None, detay=True, kaynak="elle"
         if tam and len(JOB["hatalar"]) < len(hoca_ids):
             db.ayar_yaz("son_tam_senkron", bitis)
             db.ayar_yaz("son_tam_senkron_ay", datetime.now().strftime("%Y-%m"))
+        # Web sayfasını (GitHub Pages) güncelle; internet/GitHub sorunu güncellemeyi bozmasın
+        try:
+            import yayinla
+            JOB["mesaj"] += " · " + yayinla.yayinla()
+        except Exception as e:
+            log(f"  ! Web sayfası güncellenemedi: {e}")
+            JOB["mesaj"] += " · Web sayfası güncellenemedi"
         return True
     finally:
         JOB["calisiyor"] = False
