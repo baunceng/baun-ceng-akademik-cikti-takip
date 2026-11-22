@@ -1,0 +1,10 @@
+# Yerel veri ve çalışma dosyaları
+veri.db
+*.db-journal
+otomatik_guncelleme.log
+otomatik_guncelle.bat
+__pycache__/
+*.pyc
+.DS_Store
+.taste-skill/
+.venv/

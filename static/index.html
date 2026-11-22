@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Akademik Çıktı Takibi — BAÜN Bilgisayar Mühendisliği</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;650;700&display=swap">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<!-- ============ üst çubuk ============ -->
+<header class="top">
+  <div class="logo">
+    <span class="mark" aria-hidden="true">BM</span>
+    <div>
+      <h1>Akademik Çıktı Takibi</h1>
+      <small>Balıkesir Üniversitesi · Bilgisayar Mühendisliği</small>
+    </div>
+  </div>
+  <div class="top-right">
+    <button class="btn ghost" id="btnHocalar">Öğretim üyeleri</button>
+    <button class="btn ghost" id="btnSync">YÖKSİS'ten güncelle</button>
+    <button class="btn" id="btnExcel">Excel'e aktar</button>
+  </div>
+</header>
+
+<div class="app">
+
+  <!-- ============ kenar çubuğu ============ -->
+  <aside class="side">
+    <button class="people-toggle" id="peopleToggle" aria-expanded="false" aria-controls="peoplePanel">Öğretim üyesi seçimi <span aria-hidden="true">⌄</span></button>
+    <div class="people-panel" id="peoplePanel">
+    <div class="side-h"><span>Öğretim üyeleri</span><button class="txt" id="btnHocalar2">Düzenle</button></div>
+    <nav class="nav people" id="navHoca" aria-label="Öğretim üyesi"></nav>
+    <div class="syncbox">
+      <div class="sync-line" id="syncStatus">—</div>
+      <div class="sync-sub" id="syncSub"></div>
+      <div class="meter" id="syncMeter" hidden><i></i></div>
+    </div>
+    </div>
+  </aside>
+
+  <!-- ============ ana alan ============ -->
+  <main class="main">
+    <section class="kpis" id="navKind" aria-label="Tür"></section>
+
+    <div class="toolbar">
+      <label class="find">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="9" cy="9" r="5.5"/><path d="m13.5 13.5 3.5 3.5"/></svg>
+        <input id="ara" type="search" placeholder="Başlık, dergi, yazar, DOI" autocomplete="off" aria-label="Ara"><kbd>/</kbd>
+      </label>
+      <div class="period" role="group" aria-label="Dönem">
+        <span class="lbl-in">Dönem</span>
+        <select id="preset" aria-label="Hazır dönem">
+          <option value="5y">Son 5 yıl</option><option value="buyil">Bu yıl</option>
+          <option value="gecenyil">Geçen yıl</option><option value="hepsi">Tüm yıllar</option>
+          <option value="ozel">Özel aralık</option>
+        </select>
+      </div>
+      <div class="range" role="group" aria-label="Tarih aralığı">
+          <select id="basAy" aria-label="Başlangıç ayı"></select><select id="basYil" aria-label="Başlangıç yılı"></select>
+          <span class="dash">–</span>
+          <select id="bitAy" aria-label="Bitiş ayı"></select><select id="bitYil" aria-label="Bitiş yılı"></select>
+      </div>
+      <select id="kapsam" aria-label="Kapsam">
+        <option value="">Tüm kapsamlar</option><option value="Uluslararası">Uluslararası</option><option value="Ulusal">Ulusal</option>
+      </select>
+      <select id="altTur" aria-label="İndeks / kategori"><option value="">Tüm indeksler</option></select>
+
+    </div>
+
+    <div class="subbar">
+      <div class="result-info"><span id="summary" class="summary"></span><span id="categorySummary" class="category-summary"></span></div>
+      <button class="toggle" id="btnEksik" aria-pressed="false"></button>
+      <span class="grow"></span>
+      <label class="check"><input type="checkbox" id="aysizlar" checked> Ayı bilinmeyenleri dahil et</label>
+      <label class="check"><input type="checkbox" id="gizliler"> Gizlenenleri göster</label>
+      <button class="txt" id="btnTemizle" hidden>Filtreleri sıfırla</button>
+      <button class="btn ghost sm" id="btnYeni">+ Yeni kayıt</button>
+    </div>
+
+    <div class="tablewrap" id="tablewrap">
+      <table class="grid">
+        <colgroup><col class="c-date"><col><col class="c-who"><col class="c-idx"></colgroup>
+        <thead><tr><th>Tarih</th><th>Başlık</th><th>Öğretim üyesi</th><th>Tür / indeks</th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div class="empty" id="empty" hidden></div>
+    </div>
+  </main>
+
+  <!-- ============ düzenleme paneli ============ -->
+  <aside class="insp" id="insp" hidden aria-label="Kayıt düzenleme">
+    <form id="inspForm" autocomplete="off">
+      <div class="insp-head">
+        <div>
+          <div class="insp-kind" id="inspKind"></div>
+          <div class="insp-src" id="inspSrc"></div>
+        </div>
+        <div class="insp-nav">
+          <button type="button" class="ico" id="inspPrev" title="Önceki (↑)" aria-label="Önceki">↑</button>
+          <button type="button" class="ico" id="inspNext" title="Sonraki (↓)" aria-label="Sonraki">↓</button>
+          <button type="button" class="ico" id="inspClose" title="Kapat (Esc)" aria-label="Kapat">×</button>
+        </div>
+      </div>
+      <div class="insp-body" id="inspBody"></div>
+      <div class="insp-foot">
+        <button type="submit" class="btn" id="inspSave" disabled>Kaydet</button>
+        <button type="button" class="btn ghost" id="inspCancel">Vazgeç</button>
+        <span class="grow"></span>
+        <button type="button" class="txt" id="inspReset">YÖKSİS değerine dön</button>
+        <button type="button" class="txt danger" id="inspHide">Gizle</button>
+      </div>
+    </form>
+  </aside>
+</div>
+
+<!-- ============ öğretim üyeleri ============ -->
+<dialog id="dlgHoca" class="wide">
+  <form method="dialog">
+    <div class="dlg-head"><h2>Öğretim üyeleri</h2><button class="ico" value="x" aria-label="Kapat">×</button></div>
+    <p class="note">Ad, soyad ve YÖK Akademik kimliği tutulur. “Aktif” işaretini kaldırdığınız kişi güncellemeye ve listelere dahil edilmez.</p>
+    <div class="dlg-body">
+      <table class="plain-table">
+        <thead><tr><th>Ad</th><th>Soyad</th><th>YÖK Akademik ID</th><th>Aktif</th><th>Son güncelleme</th><th></th></tr></thead>
+        <tbody id="hBody"></tbody>
+      </table>
+      <h3>Kişi ekle</h3>
+      <div class="addrow">
+        <input id="hAra" class="field-in" placeholder="Ad soyad yazın, YÖK Akademik'te aransın">
+        <input id="hId" class="field-in short" placeholder="veya ID / profil bağlantısı">
+        <button type="button" class="btn ghost" id="hEkle">ID ile ekle</button>
+      </div>
+      <div id="hSonuc" class="results"></div>
+    </div>
+  </form>
+</dialog>
+
+<!-- ============ güncelleme ============ -->
+<dialog id="dlgSync">
+  <form method="dialog">
+    <div class="dlg-head"><h2>YÖKSİS'ten güncelle</h2><button class="ico" value="x" aria-label="Kapat">×</button></div>
+    <div class="dlg-body">
+      <label class="check block card"><input type="checkbox" id="otoAktif">
+        <span><b>Her ay otomatik güncelle</b><small id="otoBilgi"></small></span></label>
+      <div class="form2">
+        <label>Şu yıldan itibaren<select id="sMinYil" class="field-in"></select></label>
+        <div><span class="lbl">Türler</span><div id="sTurler" class="checks"></div></div>
+        <div class="span2"><span class="lbl">Öğretim üyeleri</span><div id="sHocalar" class="checks cols"></div></div>
+        <label class="check block span2"><input type="checkbox" id="sDetay" checked>
+          <span>Yayın ayrıntılarını da al<small>Tüm yazarlar, Q değeri ve bağlantı gelir; işlem birkaç dakika sürer.</small></span></label>
+      </div>
+      <div id="sProg" class="prog" hidden><div class="meter"><i></i></div><p class="msg"></p><ul class="errs"></ul></div>
+      <p class="note small">Elle yaptığınız düzeltmeler ve gizlediğiniz kayıtlar güncellemede korunur.</p>
+    </div>
+    <div class="dlg-foot"><button class="btn ghost" value="x">Kapat</button><button type="button" class="btn" id="sBasla">Güncellemeyi başlat</button></div>
+  </form>
+</dialog>
+
+<!-- ============ excel ============ -->
+<dialog id="dlgExcel">
+  <form method="dialog">
+    <div class="dlg-head"><h2>Excel'e aktar</h2><button class="ico" value="x" aria-label="Kapat">×</button></div>
+    <div class="dlg-body">
+      <p class="note" id="xDonem"></p>
+      <table class="counts" id="xOzet"></table>
+      <label class="check block"><input type="checkbox" id="xBirlestir" checked>
+        <span>Ortak yayınları birleştir<small>Aynı yayını giren birden fazla öğretim üyesi tek satırda yazılır.</small></span></label>
+      <label class="check block"><input type="checkbox" id="xTumTurler" checked>
+        <span>Tüm türleri dahil et<small>İşaretli değilse yalnızca seçili tür aktarılır.</small></span></label>
+    </div>
+    <div class="dlg-foot"><button class="btn ghost" value="x">Vazgeç</button><button type="button" class="btn" id="xIndir">Dosyayı indir</button></div>
+  </form>
+</dialog>
+
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="/static/app.js"></script>
+</body>
+</html>
