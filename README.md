@@ -40,7 +40,7 @@ YÖKSİS, ay bilgisini yalnızca **bildirilerde** (etkinlik tarihi) ve **projele
 
 ## Web sayfası (salt okunur)
 
-https://gulheda.github.io/baun-ceng-akademik-cikti-takip/
+https://baunceng.github.io/baun-ceng-akademik-cikti-takip/
 
 Veriler YÖK Akademik'ten yerel platformla çekilir (YÖK, GitHub sunucularından gelen istekleri kabul etmediği için). Her güncellemeden sonra `yayinla.py` verileri `docs/` klasörüne yazar ve GitHub'a gönderir; GitHub Pages bu klasörü yayınlar. Sayfada filtreleme, arama ve Excel indirme vardır, düzenleme yoktur. Gizlenen kayıtlar yayınlanmaz.
 

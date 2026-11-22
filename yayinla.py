@@ -3,7 +3,7 @@
   python yayinla.py          -> docs/ klasörünü üretir, değişiklik varsa GitHub'a gönderir
   python yayinla.py --yerel  -> yalnızca docs/ klasörünü üretir (göndermez)
 
-Sayfa: https://gulheda.github.io/baun-ceng-akademik-cikti-takip/
+Sayfa: https://baunceng.github.io/baun-ceng-akademik-cikti-takip/
 Gizlenen kayıtlar ve pasif öğretim üyeleri sayfada gösterilmez.
 Ayrıca veritabanının tamamı (düzeltmeler dahil) yedek/veri.sql olarak GitHub'a yedeklenir.
 """
